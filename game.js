@@ -1,9 +1,11 @@
 import { playerCount, cardCount, faces } from "./constants.js"
-import { Player } from "./player.js";
-import { Card } from "./card.js";
+import Player from "./player.js";
+import Card from "./card.js";
 import { notifyDashboard, notifyPlayer, notifyLost, notifyWon, createDiv} from "./notify.js"
+import { game, players, drawCount, tieDrawsCount, round } from "./index.js"
+import { playerGrids, drawButtons, startButton, dashboard } from "./index.js"
 
-class Game{
+export default class Game{
     constructor(){
         drawButtons.forEach(button => { button.disabled = false })
         startButton.disabled = true
@@ -156,52 +158,4 @@ class Game{
             player.appendChild(div)
         })
     }
-}
-
-var game = NaN
-var players = []
-var drawCount = 0
-var tieDrawsCount = 0
-var round = 0
-
-const playerGrids = document.querySelectorAll("[id^='player']")
-const drawButtons = document.querySelectorAll("[id^='draw']")
-const startButton = document.querySelector("#start_button")
-const dashboard = document.querySelector('#dashboard')
-
-drawButtons.forEach(button => {
-    button.disabled = true
-
-    button.addEventListener('click', ()=>{
-        var id = button.id.split('_')[1]
-        players[id].drawCards(id)
-        drawButtons[id].hidden = true
-        notifyPlayer(id, players[id].cardFaces().toString())
-        drawCount++
-        if(drawCount == playerCount) game.getResult()
-    })
-})
-
-startButton.addEventListener('click', ()=> {
-    startGame()
-})
-
-function startGame(){
-    players.forEach(player => player.cards = [])
-    drawButtons.forEach(button => button.hidden = false)
-    playerGrids.forEach(player => {
-        player.querySelectorAll(".card-body > div").forEach(div => div.remove())
-    })
-    dashboard.querySelectorAll("div").forEach(div => div.remove())
-    document.querySelectorAll("[id^='tie_draw']").forEach(button => button.remove())
-
-    round++
-    drawCount = 0
-    tieDrawsCount = 0
-    game = new Game()
-}
-
-function auto(){
-    startButton.click()
-    drawButtons.forEach(button => { button.click() })
 }

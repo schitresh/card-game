@@ -1,7 +1,7 @@
 import { cardCount, faces } from "./constants.js"
-import { Card } from "./card.js"
+import Card from "./card.js"
 
-export class Player{
+export default class Player{
     constructor(id){
         this.id = id
         this.name = `Player ${id+1}`
