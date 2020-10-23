@@ -1,4 +1,4 @@
-import { card_count, faces } from "./constants.js"
+import { cardCount, faces } from "./constants.js"
 import { Card } from "./card.js"
 
 export class Player{
@@ -9,7 +9,7 @@ export class Player{
     }
 
     drawCards(){
-        for(let i = 0; i < card_count; i++){
+        for(let i = 0; i < cardCount; i++){
             this.cards.push(new Card())
         }
     }

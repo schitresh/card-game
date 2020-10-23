@@ -46,8 +46,8 @@ class Game{
         players.forEach(player => this.playerCards.push(player.cardValues()))
 
         for(let rule of rules){
-            var result = this.checkRule(`is_${rule}`)
-            this.gethighCard()
+            var result = this.checkRule(`is${rule}`)
+            this.getHighCard()
             console.log(result)
             if(result != -1) return [result, rule]
         }
@@ -127,7 +127,7 @@ class Game{
 
                 if(tieDrawsCount == this.activePlayers.length){
                     tieDrawsCount = 0
-                    this.gethighCard()
+                    this.getHighCard()
 
                     var result = this.checkRule("isHighCard")
 
