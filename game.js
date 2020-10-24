@@ -1,34 +1,47 @@
-import { playerCount, cardCount, faces } from "./constants.js"
+import { playerCount, cardCount } from "./constants.js"
+import { notifyLost } from "./notify.js"
+
 import Player from "./player.js";
-import Card from "./card.js";
-import { notifyDashboard, notifyPlayer, notifyLost, notifyWon, createDiv} from "./notify.js"
-import { game, players, drawCount, tieDrawsCount, round } from "./index.js"
-import { playerGrids, drawButtons, startButton, dashboard } from "./index.js"
+import { resetLayout, activateTieBreaker } from "./index.js"
 
 export default class Game{
     constructor(){
-        drawButtons.forEach(button => { button.disabled = false })
-        startButton.disabled = true
-
-        if(round == 1) this.initPlayers()
-
+        this.players = []
         this.playerCards = []
+        this.round = 0
+
         this.activePlayers = [... Array(playerCount).keys()]
         this.highCard = 0
+        this.drawCount = 0
+
+        this.initPlayers()
     }
 
     initPlayers(){
         for(let i = 0; i < playerCount; i++){
             var player = new Player(i)
-            players.push(player)
+            this.players.push(player)
             document.querySelector(`#player_${i} > .card > .card-header`).innerText = player.name
         }
     }
+
+    newRound(){
+        resetLayout()
+        
+        this.players.forEach(player => player.cards = [])
+        this.playerCards = []
+        this.round++
+
+        this.activePlayers = [... Array(playerCount).keys()]
+        this.highCard = 0
+        this.drawCount = 0
+    }
+
     getHighCard(){
         var highCard = 0
 
-        this.activePlayers.forEach(index => {
-            var currentMax = Math.max(... this.playerCards[index])
+        this.activePlayers.forEach(id => {
+            var currentMax = Math.max(... this.playerCards[id])
             highCard = Math.max(highCard, currentMax)
         })
 
@@ -37,15 +50,14 @@ export default class Game{
 
     getResult(){
         var result = this.calResult()
-        var index = result[0]
+        var id = result[0]
         var rule = result[1].replace(/_/g," ").toUpperCase()
-
-        if(index != -1) notifyWon(index, rule, round)
+        return [id, rule]
     }
 
     calResult(){
         var rules = ["Trail", "Sequence", "Pair", "HighCard"]
-        players.forEach(player => this.playerCards.push(player.cardValues()))
+        this.players.forEach(player => this.playerCards.push(player.cardValues()))
 
         for(let rule of rules){
             var result = this.checkRule(`is${rule}`)
@@ -54,14 +66,14 @@ export default class Game{
             if(result != -1) return [result, rule]
         }
 
-        this.gameDraw()
+        this.tieBreaker()
         return [-1, ""]
     }
 
     checkRule(rule){
         var ruleResult = []
-        this.activePlayers.forEach(index => {
-            var applyRule = eval(`this.${rule}(this.playerCards[${index}])`)
+        this.activePlayers.forEach(id => {
+            var applyRule = eval(`this.${rule}(this.playerCards[${id}])`)
             ruleResult.push(applyRule)
         })
         console.log(ruleResult)
@@ -70,7 +82,7 @@ export default class Game{
 
     checkResult(ruleResult){
         var count = ruleResult.filter(Boolean).length
-        if(count != 0) this.activePlayers = this.removePlayers(ruleResult)
+        if(count != 0) this.removePlayers(ruleResult)
         if(this.activePlayers.length == 1) return this.activePlayers[0]
         return -1
     }
@@ -81,7 +93,7 @@ export default class Game{
             if(ruleResult[i] == true) newPlayers.push(this.activePlayers[i])
             else notifyLost(this.activePlayers[i])
         }
-        return newPlayers
+        this.activePlayers = newPlayers
     }
 
     isTrail(cards){
@@ -106,56 +118,19 @@ export default class Game{
 
     isHighCard(cards){
         var currentHigh = Math.max(... cards)
-        console.log(this.highCard)
-        console.log(currentHigh)
         if(currentHigh == this.highCard) return true
         return false
     }
 
-    gameDraw(){
-        this.activateTieBreaker()
-
-        var tieDraws = document.querySelectorAll("[id^='tie_draw']")
-
-        tieDraws.forEach(button => {
-            button.addEventListener('click', ()=>{
-                var id = button.id.split('_')[2]
-                this.playerCards[id] = [players[id].drawCard(id)]
-                console.log(this.playerCards[id][0])
-                playerGrids[id].querySelector(`#tie_cards_${id}`).textContent += `${faces[this.playerCards[id][0]]}, `
-
-                tieDrawsCount++
-                button.disabled = true
-
-                if(tieDrawsCount == this.activePlayers.length){
-                    tieDrawsCount = 0
-                    this.getHighCard()
-
-                    var result = this.checkRule("isHighCard")
-
-                    if(result != -1) notifyWon(result, "Tie Breaker High Card", round)
-                    else tieDraws.forEach(button => button.disabled = false)
-                }
-            })
-        })
+    tieBreaker(){
+        activateTieBreaker()
+        this.DrawCount = 0
     }
 
-    activateTieBreaker(){
-        notifyDashboard("TIE BREAKER", "red")
-        notifyDashboard("Draw Tie Cards Until Winner", "red")
+    getTieResult(){
+        this.DrawCount = 0
+        this.getHighCard()
 
-        this.activePlayers.forEach(index => {
-            var button = document.createElement("button")
-            button.textContent = "Tie Draw"
-            button.setAttribute("class", "btn btn-danger")
-            button.setAttribute("id", `tie_draw_${index}`)
-
-            var div = document.createElement("div")
-            div.setAttribute("id",`tie_cards_${index}`)
-
-            var player = playerGrids[index].querySelector('.card-body')
-            player.appendChild(button)
-            player.appendChild(div)
-        })
+        return this.checkRule("isHighCard")
     }
 }

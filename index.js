@@ -1,53 +1,89 @@
-import Game from "./game.js"
-import { notifyDashboard, notifyPlayer, notifyLost, notifyWon, createDiv} from "./notify.js"
 import { playerCount, cardCount, faces } from "./constants.js"
+import { notifyDashboard, notifyPlayer, notifyLost, notifyWon, createDiv} from "./notify.js"
+
+import Game from "./game.js"
 
 export var game = NaN
-export var players = []
-export var drawCount = 0
-export var tieDrawsCount = 0
-export var round = 0
 
 export const playerGrids = document.querySelectorAll("[id^='player']")
 export const drawButtons = document.querySelectorAll("[id^='draw']")
+
 export const startButton = document.querySelector("#start_button")
-export const dashboard = document.querySelector('#dashboard')
+export const dashboard = document.querySelector("#dashboard")
+export const statistics = document.querySelector("#statistics")
+
+export function resetLayout(){
+    playerGrids.forEach(player => {
+        player.querySelectorAll(".card-body > div").forEach(div => div.remove())
+        player.querySelectorAll("[id^='tie_draw']").forEach(button => button.remove())
+    })
+    drawButtons.forEach(button => button.hidden = false)
+    dashboard.querySelectorAll("div").forEach(div => div.remove())
+}
+
+export function activateTieBreaker(){
+    activateTieLayout()
+    var tieDraws = document.querySelectorAll("[id^='tie_draw']")
+
+    tieDraws.forEach(button => {
+        button.addEventListener('click', ()=>{
+            button.disabled = true
+            var id = button.id.split('_')[2]
+            game.playerCards[id] = [game.players[id].drawCard(id)]
+            playerGrids[id].querySelector(`#tie_cards_${id}`).textContent += `${faces[game.playerCards[id][0]]}, `
+
+            game.DrawCount++
+
+            if(game.DrawCount == game.activePlayers.length){
+                var id = game.getTieResult()
+                if(id == -1) tieDraws.forEach(button => button.disabled = false)
+                else notifyWon(id, "Tie Breaker High Card", game.round)
+            }
+        })
+    })
+}
+export function activateTieLayout(){
+    notifyDashboard("TIE BREAKER", "red")
+    notifyDashboard("Draw Tie Cards Until Winner", "red")
+
+    game.activePlayers.forEach(id => {
+        var button = document.createElement("button")
+        button.textContent = "Tie Draw"
+        button.setAttribute("class", "btn btn-danger")
+        button.setAttribute("id", `tie_draw_${id}`)
+
+        var div = document.createElement("div")
+        div.setAttribute("id",`tie_cards_${id}`)
+
+        var player = playerGrids[id].querySelector('.card-body')
+        player.appendChild(button)
+        player.appendChild(div)
+    })
+}
 
 drawButtons.forEach(button => {
     button.disabled = true
 
     button.addEventListener('click', ()=>{
+        button.hidden = true
         var id = button.id.split('_')[1]
-        players[id].drawCards(id)
-        drawButtons[id].hidden = true
-        notifyPlayer(id, players[id].cardFaces().toString())
-        drawCount++
-        if(drawCount == playerCount) game.getResult()
+        game.players[id].drawCards(id)
+        notifyPlayer(id, game.players[id].cardFaces().toString())
+
+        game.drawCount++
+        if(game.drawCount == playerCount){
+            var result = game.getResult()
+            if(result[0] != -1) notifyWon(result[0], result[1], game.round)
+        }
     })
 })
 
-if(startButton){
-    startButton.addEventListener('click', ()=> {
-        startGame()
-    })
-}
 
-function startGame(){
-    players.forEach(player => player.cards = [])
-    drawButtons.forEach(button => button.hidden = false)
-    playerGrids.forEach(player => {
-        player.querySelectorAll(".card-body > div").forEach(div => div.remove())
-    })
-    dashboard.querySelectorAll("div").forEach(div => div.remove())
-    document.querySelectorAll("[id^='tie_draw']").forEach(button => button.remove())
-
-    round++
-    drawCount = 0
-    tieDrawsCount = 0
-    game = new Game()
-}
-
-function auto(){
-    startButton.click()
-    drawButtons.forEach(button => { button.click() })
-}
+startButton.addEventListener('click', ()=> {
+    if(game) game.newRound()
+    else{
+        game = new Game()
+        drawButtons.forEach(button => { button.disabled = false })
+        startButton.disabled = true
+    }
+})

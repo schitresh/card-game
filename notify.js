@@ -1,3 +1,5 @@
+import { playerGrids, startButton, dashboard, statistics } from "./index.js"
+
 export function createDiv(display, color=NaN){
     var div = document.createElement("div")
     var text = document.createTextNode(display)
@@ -7,24 +9,22 @@ export function createDiv(display, color=NaN){
 }
 
 export function notifyDashboard(display, color=NaN){
-    var dashboard = document.querySelector('#dashboard')
     dashboard.appendChild(createDiv(display, color))
 }
 
-export function notifyPlayer(index, display, color=NaN){
+export function notifyPlayer(id, display, color=NaN){
     var div = createDiv(display, color)
-    var player_grid = document.querySelector(`#player_${index}`)
-    var player = player_grid.querySelector('.card-body')
+    var player = playerGrids[id].querySelector('.card-body')
     player.appendChild(div)
 }
 
-export function notifyLost(index){
-    notifyPlayer(index, "LOST!", "red")
+export function notifyLost(id){
+    notifyPlayer(id, "LOST!", "red")
 }
 
-export function notifyWon(index, rule, round){
-    notifyPlayer(index, "WINNER!!", "green")
-    notifyDashboard(`Player ${index} Won by ${rule}`)
-    document.querySelector("#statistics").appendChild(createDiv(`Round ${round}: Player ${index}`))
-    start_button.disabled = false
+export function notifyWon(id, rule, round){
+    notifyPlayer(id, "WINNER!!", "green")
+    notifyDashboard(`Player ${id+1} Won by ${rule}`)
+    statistics.appendChild(createDiv(`Round ${round}: Player ${id}`))
+    startButton.disabled = false
 }
