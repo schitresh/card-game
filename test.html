@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Mocha Tests</title>
+    <link rel="stylesheet" href="node_modules/mocha/mocha.css">
+    <link rel="import" href="game.html">
+  </head>
+  <body>
+    <div id="mocha"></div>
+    <script src=""></script>
+    <script src="node_modules/mocha/mocha.js"></script>
+    <script src="node_modules/chai/chai.js"></script>
+    <script>mocha.setup('bdd')</script>
+
+
+    <script type="module" src="test/game.test.js"></script>
+    <script type="module" src="test/player.test.js"></script>
+    <script type="module" src="test/card.test.js"></script>
+
+
+    <script type="module">
+      mocha.checkLeaks()
+      mocha.run()
+    </script>
+  </body>
+</html>
