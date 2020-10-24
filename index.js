@@ -21,11 +21,18 @@ export function resetLayout(){
     dashboard.querySelectorAll("div").forEach(div => div.remove())
 }
 
+export function enableButtons(buttons){
+    buttons.forEach(button => button.disabled = false)
+}
+export function disableButtons(buttons){
+    buttons.forEach(button => button.disabled = true)
+}
+
 export function activateTieBreaker(){
     activateTieLayout()
-    var tieDraws = document.querySelectorAll("[id^='tie_draw']")
+    var tieDrawButtons = document.querySelectorAll("[id^='tie_draw']")
 
-    tieDraws.forEach(button => {
+    tieDrawButtons.forEach(button => {
         button.addEventListener('click', ()=>{
             button.disabled = true
             var id = button.id.split('_')[2]
@@ -36,8 +43,9 @@ export function activateTieBreaker(){
 
             if(game.DrawCount == game.activePlayers.length){
                 var id = game.getTieResult()
-                if(id == -1) tieDraws.forEach(button => button.disabled = false)
+                if(id == -1) enableButtons(tieDrawButtons)
                 else notifyWon(id, "Tie Breaker High Card", game.round)
+                game.lostRoundPlayers.forEach(player => notifyLost(player))
             }
         })
     })
@@ -61,9 +69,9 @@ export function activateTieLayout(){
     })
 }
 
-drawButtons.forEach(button => {
-    button.disabled = true
+disableButtons(drawButtons)
 
+drawButtons.forEach(button => {
     button.addEventListener('click', ()=>{
         button.hidden = true
         var id = button.id.split('_')[1]
@@ -74,16 +82,19 @@ drawButtons.forEach(button => {
         if(game.drawCount == playerCount){
             var result = game.getResult()
             if(result[0] != -1) notifyWon(result[0], result[1], game.round)
+            game.lostRoundPlayers.forEach(player => notifyLost(player))
         }
     })
 })
 
-
-startButton.addEventListener('click', ()=> {
-    if(game) game.newRound()
-    else{
-        game = new Game()
-        drawButtons.forEach(button => { button.disabled = false })
-        startButton.disabled = true
-    }
-})
+if(startButton){
+    startButton.addEventListener('click', ()=> {
+        if(game) game.newRound()
+        else{
+            game = new Game()
+            enableButtons(drawButtons)
+            startButton.disabled = true
+            game.players.forEach(player => playerGrids[player.id].querySelector(".card-header").innerText = player.name)
+        }
+    })
+}

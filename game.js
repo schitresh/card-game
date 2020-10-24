@@ -1,5 +1,4 @@
 import { playerCount, cardCount } from "./constants.js"
-import { notifyLost } from "./notify.js"
 
 import Player from "./player.js";
 import { resetLayout, activateTieBreaker } from "./index.js"
@@ -11,7 +10,8 @@ export default class Game{
         this.round = 0
 
         this.activePlayers = [... Array(playerCount).keys()]
-        this.highCard = 0
+        this.lostRoundPlayers = []
+        this.highCard = -1
         this.drawCount = 0
 
         this.initPlayers()
@@ -21,31 +21,20 @@ export default class Game{
         for(let i = 0; i < playerCount; i++){
             var player = new Player(i)
             this.players.push(player)
-            document.querySelector(`#player_${i} > .card > .card-header`).innerText = player.name
         }
     }
 
     newRound(){
         resetLayout()
-        
+
         this.players.forEach(player => player.cards = [])
         this.playerCards = []
         this.round++
 
         this.activePlayers = [... Array(playerCount).keys()]
-        this.highCard = 0
+        this.lostRoundPlayers = []
+        this.highCard = -1
         this.drawCount = 0
-    }
-
-    getHighCard(){
-        var highCard = 0
-
-        this.activePlayers.forEach(id => {
-            var currentMax = Math.max(... this.playerCards[id])
-            highCard = Math.max(highCard, currentMax)
-        })
-
-        this.highCard = highCard
     }
 
     getResult(){
@@ -61,8 +50,8 @@ export default class Game{
 
         for(let rule of rules){
             var result = this.checkRule(`is${rule}`)
-            this.getHighCard()
-            console.log(result)
+            this.setHighCard()
+            // console.log(result)
             if(result != -1) return [result, rule]
         }
 
@@ -76,7 +65,7 @@ export default class Game{
             var applyRule = eval(`this.${rule}(this.playerCards[${id}])`)
             ruleResult.push(applyRule)
         })
-        console.log(ruleResult)
+        // console.log(ruleResult)
         return this.checkResult(ruleResult)
     }
 
@@ -91,7 +80,7 @@ export default class Game{
         var newPlayers = []
         for(let i = 0; i < ruleResult.length; i++){
             if(ruleResult[i] == true) newPlayers.push(this.activePlayers[i])
-            else notifyLost(this.activePlayers[i])
+            else this.lostRoundPlayers.push(this.activePlayers[i])
         }
         this.activePlayers = newPlayers
     }
@@ -117,19 +106,49 @@ export default class Game{
     }
 
     isHighCard(cards){
-        var currentHigh = Math.max(... cards)
+        var currentHigh = this.getHighCard(cards)
         if(currentHigh == this.highCard) return true
         return false
     }
 
+    getHighCard(cards){
+        var highCard = -1
+        for(let card of cards){
+            if(card == 0){
+                highCard = 0
+                break
+            }
+            else if(card > highCard) highCard = card
+        }
+        return highCard
+    }
+
+    setHighCard(){
+        var highCard = -1
+
+        for(let id of this.activePlayers){
+            for(let card of this.playerCards[id]){
+                if(card == 0){
+                    highCard = 0
+                    break
+                }
+                else if(card > highCard) highCard = card
+            }
+            if(highCard == 0) break
+        }
+
+        this.highCard = highCard
+    }
+
     tieBreaker(){
         activateTieBreaker()
+        this.lostRoundPlayers = []
         this.DrawCount = 0
     }
 
     getTieResult(){
         this.DrawCount = 0
-        this.getHighCard()
+        this.setHighCard()
 
         return this.checkRule("isHighCard")
     }
